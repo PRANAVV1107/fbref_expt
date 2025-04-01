@@ -1,0 +1,54 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+          - name: Log in to Docker Hub
+          uses: docker/login-action@v3
+          with:
+            username: ${{ secrets.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_PASSWORD }}
+     
+      - name: Build Docker Image
+        run: |
+            docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/your-app-name:latest .
+     
+      - name: Push Docker Image
+        run: |
+            docker push ${{ secrets.DOCKERHUB_USERNAME }}/your-app-name:latest
+    
+            - name: Deploy to Server
+            uses: appleboy/ssh-action@master
+            with:
+            host: ${{ secrets.SERVER_HOST }}
+            username: ${{ secrets.SERVER_USER }}
+            key: ${{ secrets.SERVER_SSH_KEY }}
+            script: |
+                docker pull ${{ secrets.DOCKERHUB_USERNAME }}/your-app-name:latest
+                docker stop your-app-container || true
+                docker rm your-app-container || true
+                docker run -d --name your-app-container -p 8501:8501 ${{ secrets.DOCKERHUB_USERNAME }}/your-app-name:latest
+        
